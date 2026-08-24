@@ -2,6 +2,8 @@ import type { PlatformUser } from "@/features/users/types";
 
 export type SchoolType = "COLLEGE" | "LYCEE" | "COLLEGE_LYCEE" | "PRIMAIRE" | "AUTRE";
 
+export type PlatformStatus = "EN_SERVICE" | "SUSPENDU" | "ARCHIVE";
+
 export type School = {
   id: string;
   name: string;
@@ -17,6 +19,7 @@ export type School = {
   directorName?: string;
   active?: boolean;
   configured?: boolean;
+  platformStatus?: PlatformStatus;
   createdAt?: string;
   updatedAt?: string;
 };

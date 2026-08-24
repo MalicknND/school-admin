@@ -1,14 +1,39 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { APP_NAME, PORTAL_NAME } from "@/lib/branding";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { ErrorState, LoadingState } from "@/components/layout/StateBlocks";
-import { useSchool } from "@/features/schools/hooks";
-import { useUsers } from "@/features/users/hooks";
+import { useSchool, useUpdatePlatformStatus } from "@/features/schools/hooks";
+import type { PlatformStatus } from "@/features/schools/types";
+import { useResetPassword, useUsers } from "@/features/users/hooks";
+import type { ResetPasswordResult } from "@/features/users/types";
 import { fullName, schoolAdminsOfSchool, usersOfSchool } from "@/features/users/derive";
-import { ConfiguredBadge } from "@/features/schools/components/SchoolStatusBadges";
+import {
+  ConfiguredBadge,
+  PlatformStatusBadge,
+} from "@/features/schools/components/SchoolStatusBadges";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/schools/$id")({
@@ -39,6 +64,12 @@ function formatDate(value?: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString("fr-FR");
 }
 
+const PLATFORM_STATUS_ACTION_LABELS: Record<PlatformStatus, string> = {
+  EN_SERVICE: "Mettre en service",
+  SUSPENDU: "Suspendre",
+  ARCHIVE: "Archiver",
+};
+
 function SchoolDetailPage() {
   const { id } = Route.useParams();
   const schoolQuery = useSchool(id);
@@ -48,6 +79,47 @@ function SchoolDetailPage() {
   const admins = schoolAdminsOfSchool(usersQuery.data, id);
   const schoolUsers = usersOfSchool(usersQuery.data, id);
   const primaryAdmin = admins[0];
+
+  const statusMutation = useUpdatePlatformStatus();
+  const resetPasswordMutation = useResetPassword();
+  const [revealedPassword, setRevealedPassword] = useState<ResetPasswordResult | null>(null);
+
+  function handleStatusChange(platformStatus: PlatformStatus) {
+    statusMutation.mutate(
+      { id, platformStatus },
+      {
+        onSuccess: () => toast.success("Statut plateforme mis à jour"),
+        onError: (error) =>
+          toast.error("Échec de la mise à jour du statut", {
+            description: error instanceof Error ? error.message : undefined,
+          }),
+      },
+    );
+  }
+
+  function handleResetPassword() {
+    if (!primaryAdmin) return;
+    resetPasswordMutation.mutate(primaryAdmin.id, {
+      onSuccess: (result) => setRevealedPassword(result),
+      onError: (error) =>
+        toast.error("Échec de la réinitialisation", {
+          description: error instanceof Error ? error.message : undefined,
+        }),
+    });
+  }
+
+  async function copyTemporaryPassword() {
+    if (!revealedPassword) return;
+    try {
+      if (!navigator.clipboard) throw new Error("Presse-papiers indisponible");
+      await navigator.clipboard.writeText(revealedPassword.temporaryPassword);
+      toast.success("Mot de passe copié");
+    } catch {
+      toast.error(
+        "Impossible de copier automatiquement — sélectionnez le mot de passe manuellement",
+      );
+    }
+  }
 
   return (
     <PlatformShell
@@ -95,25 +167,87 @@ function SchoolDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Statut</CardTitle>
-                <CardDescription>Lecture seule.</CardDescription>
+                <CardDescription>
+                  Configuration et statut plateforme de l’établissement.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Configuration</span>
                   <ConfiguredBadge configured={school.configured} />
                 </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Statut plateforme</span>
+                  <PlatformStatusBadge status={school.platformStatus} />
+                </div>
                 <Separator />
-                <p className="text-xs text-muted-foreground">
-                  Gestion du statut à venir : aucun endpoint d’activation/désactivation n’est exposé
-                  par l’API.
-                </p>
+                <div className="flex flex-wrap gap-2">
+                  {school.platformStatus !== "EN_SERVICE" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={statusMutation.isPending}
+                      onClick={() => handleStatusChange("EN_SERVICE")}
+                    >
+                      {PLATFORM_STATUS_ACTION_LABELS.EN_SERVICE}
+                    </Button>
+                  ) : null}
+                  {school.platformStatus !== "SUSPENDU" ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="outline" disabled={statusMutation.isPending}>
+                          {PLATFORM_STATUS_ACTION_LABELS.SUSPENDU}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Suspendre cet établissement ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Les utilisateurs de cette école ne pourront plus se connecter.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleStatusChange("SUSPENDU")}>
+                            Confirmer la suspension
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : null}
+                  {school.platformStatus !== "ARCHIVE" ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="outline" disabled={statusMutation.isPending}>
+                          {PLATFORM_STATUS_ACTION_LABELS.ARCHIVE}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Archiver cet établissement ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Les utilisateurs de cette école ne pourront plus se connecter.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleStatusChange("ARCHIVE")}>
+                            Confirmer l’archivage
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Comptes administrateurs</CardTitle>
-                <CardDescription>Dérivés des comptes utilisateurs de la plateforme.</CardDescription>
+                <CardDescription>
+                  Dérivés des comptes utilisateurs de la plateforme.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {usersQuery.isPending ? <LoadingState label="Chargement des comptes…" /> : null}
@@ -135,6 +269,35 @@ function SchoolDetailPage() {
                         Le mot de passe temporaire n’a pas encore été changé par l’administrateur.
                       </p>
                     ) : null}
+                    {primaryAdmin ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={resetPasswordMutation.isPending}
+                          >
+                            Réinitialiser le mot de passe
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Réinitialiser le mot de passe ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Un nouveau mot de passe temporaire sera généré pour{" "}
+                              {fullName(primaryAdmin) || primaryAdmin.email}. L’administrateur devra
+                              le changer à sa prochaine connexion.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleResetPassword}>
+                              Confirmer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : null}
                   </>
                 ) : null}
               </CardContent>
@@ -142,6 +305,32 @@ function SchoolDetailPage() {
           </div>
         </div>
       ) : null}
+
+      <Dialog
+        open={revealedPassword !== null}
+        onOpenChange={(open) => !open && setRevealedPassword(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mot de passe temporaire</DialogTitle>
+            <DialogDescription>
+              Ce mot de passe ne sera plus jamais affiché après la fermeture de cette fenêtre.
+              Communiquez-le à{" "}
+              {revealedPassword
+                ? fullName(revealedPassword.user) || revealedPassword.user.email
+                : "l’administrateur"}
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 rounded-md bg-muted p-3 font-mono text-sm">
+            <span className="flex-1 break-all">{revealedPassword?.temporaryPassword}</span>
+            <Button size="sm" variant="outline" onClick={copyTemporaryPassword}>
+              <Copy className="size-4" />
+              Copier
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PlatformShell>
   );
 }

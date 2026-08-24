@@ -13,3 +13,9 @@ export type PlatformUser = {
   createdAt?: string;
   updatedAt?: string;
 };
+
+/** Réservé SUPER_ADMIN : le mot de passe temporaire n'est renvoyé qu'une seule fois. */
+export type ResetPasswordResult = {
+  user: PlatformUser;
+  temporaryPassword: string;
+};

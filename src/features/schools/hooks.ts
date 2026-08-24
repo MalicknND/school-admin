@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSchoolWithAdmin, fetchSchool, fetchSchools } from "./api";
+import {
+  createSchoolWithAdmin,
+  fetchSchool,
+  fetchSchools,
+  updateSchoolPlatformStatus,
+} from "./api";
+import type { PlatformStatus } from "./types";
 
 export const schoolsKeys = {
   all: ["schools"] as const,
@@ -25,6 +31,18 @@ export function useCreateSchoolWithAdmin() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: schoolsKeys.all });
       void queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+}
+
+export function useUpdatePlatformStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, platformStatus }: { id: string; platformStatus: PlatformStatus }) =>
+      updateSchoolPlatformStatus(id, platformStatus),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: schoolsKeys.all });
+      void queryClient.invalidateQueries({ queryKey: schoolsKeys.detail(variables.id) });
     },
   });
 }

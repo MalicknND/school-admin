@@ -20,7 +20,15 @@ export function ErrorState({ error }: { error: unknown }) {
   );
 }
 
-export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
+export function EmptyState({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-background py-12 text-center">
       <Inbox className="size-6 text-muted-foreground" />

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { School } from "../types";
 import type { PlatformUser } from "@/features/users/types";
 import { fullName } from "@/features/users/derive";
-import { ConfiguredBadge } from "./SchoolStatusBadges";
+import { ConfiguredBadge, PlatformStatusBadge } from "./SchoolStatusBadges";
 
 export function SchoolsTable({
   schools,
@@ -29,6 +29,7 @@ export function SchoolsTable({
             <TableHead>Code</TableHead>
             <TableHead>Ville / Région</TableHead>
             <TableHead>Configuration</TableHead>
+            <TableHead>Statut plateforme</TableHead>
             <TableHead>Administrateur</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -45,6 +46,9 @@ export function SchoolsTable({
                 </TableCell>
                 <TableCell>
                   <ConfiguredBadge configured={school.configured} />
+                </TableCell>
+                <TableCell>
+                  <PlatformStatusBadge status={school.platformStatus} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {admin ? (

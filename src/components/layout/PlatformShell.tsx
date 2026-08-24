@@ -46,7 +46,8 @@ export function PlatformShell({
     );
   }
 
-  const initials = `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`.toUpperCase() || "SA";
+  const initials =
+    `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`.toUpperCase() || "SA";
 
   return (
     <div className="flex min-h-screen bg-muted/40">
@@ -91,7 +92,11 @@ export function PlatformShell({
           </span>
         </nav>
         <div className="p-3">
-          <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => void signOut()}>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3"
+            onClick={() => void signOut()}
+          >
             <LogOut className="size-4" />
             Déconnexion
           </Button>

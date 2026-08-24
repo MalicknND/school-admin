@@ -36,6 +36,7 @@ function SchoolsPage() {
   const usersQuery = useUsers();
   const [search, setSearch] = useState("");
   const [configuredFilter, setConfiguredFilter] = useState("all");
+  const [platformStatusFilter, setPlatformStatusFilter] = useState("all");
 
   const adminsBySchool = primaryAdminBySchool(usersQuery.data);
 
@@ -49,10 +50,14 @@ function SchoolsPage() {
           .some((value) => String(value).toLowerCase().includes(term));
       const matchConfigured =
         configuredFilter === "all" ||
-        (configuredFilter === "configured" ? school.configured === true : school.configured !== true);
-      return matchTerm && matchConfigured;
+        (configuredFilter === "configured"
+          ? school.configured === true
+          : school.configured !== true);
+      const matchPlatformStatus =
+        platformStatusFilter === "all" || school.platformStatus === platformStatusFilter;
+      return matchTerm && matchConfigured && matchPlatformStatus;
     });
-  }, [schoolsQuery.data, search, configuredFilter]);
+  }, [schoolsQuery.data, search, configuredFilter, platformStatusFilter]);
 
   return (
     <PlatformShell
@@ -83,6 +88,17 @@ function SchoolsPage() {
             <SelectItem value="all">Toutes configurations</SelectItem>
             <SelectItem value="configured">Configuré</SelectItem>
             <SelectItem value="unconfigured">Non configuré</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={platformStatusFilter} onValueChange={setPlatformStatusFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="EN_SERVICE">En service</SelectItem>
+            <SelectItem value="SUSPENDU">Suspendu</SelectItem>
+            <SelectItem value="ARCHIVE">Archivé</SelectItem>
           </SelectContent>
         </Select>
       </div>

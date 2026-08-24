@@ -115,8 +115,8 @@ export function CreateSchoolForm({
           {field("confirmPassword", "Confirmation", "password", "new-password")}
           <p className="flex items-start gap-2 rounded-md bg-muted p-3 text-xs text-muted-foreground">
             <Info className="mt-0.5 size-4 shrink-0" />
-            L’administrateur devra changer ce mot de passe temporaire à sa première connexion, depuis
-            le frontend école.
+            L’administrateur devra changer ce mot de passe temporaire à sa première connexion,
+            depuis le frontend école.
           </p>
         </CardContent>
       </Card>
