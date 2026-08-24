@@ -36,7 +36,6 @@ function SchoolsPage() {
   const usersQuery = useUsers();
   const [search, setSearch] = useState("");
   const [configuredFilter, setConfiguredFilter] = useState("all");
-  const [activeFilter, setActiveFilter] = useState("all");
 
   const adminsBySchool = primaryAdminBySchool(usersQuery.data);
 
@@ -51,12 +50,9 @@ function SchoolsPage() {
       const matchConfigured =
         configuredFilter === "all" ||
         (configuredFilter === "configured" ? school.configured === true : school.configured !== true);
-      const matchActive =
-        activeFilter === "all" ||
-        (activeFilter === "active" ? school.active === true : school.active === false);
-      return matchTerm && matchConfigured && matchActive;
+      return matchTerm && matchConfigured;
     });
-  }, [schoolsQuery.data, search, configuredFilter, activeFilter]);
+  }, [schoolsQuery.data, search, configuredFilter]);
 
   return (
     <PlatformShell
@@ -87,16 +83,6 @@ function SchoolsPage() {
             <SelectItem value="all">Toutes configurations</SelectItem>
             <SelectItem value="configured">Configuré</SelectItem>
             <SelectItem value="unconfigured">Non configuré</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={activeFilter} onValueChange={setActiveFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
-            <SelectItem value="active">Actif</SelectItem>
-            <SelectItem value="inactive">Inactif</SelectItem>
           </SelectContent>
         </Select>
       </div>

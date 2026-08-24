@@ -6,7 +6,7 @@ import { ErrorState, LoadingState } from "@/components/layout/StateBlocks";
 import { useSchool } from "@/features/schools/hooks";
 import { useUsers } from "@/features/users/hooks";
 import { fullName, schoolAdminsOfSchool, usersOfSchool } from "@/features/users/derive";
-import { ActiveBadge, ConfiguredBadge } from "@/features/schools/components/SchoolStatusBadges";
+import { ConfiguredBadge } from "@/features/schools/components/SchoolStatusBadges";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -101,10 +101,6 @@ function SchoolDetailPage() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Configuration</span>
                   <ConfiguredBadge configured={school.configured} />
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">État</span>
-                  <ActiveBadge active={school.active} />
                 </div>
                 <Separator />
                 <p className="text-xs text-muted-foreground">

@@ -7,8 +7,3 @@ export function ConfiguredBadge({ configured }: { configured?: boolean | undefin
     <Badge variant="outline">Non configuré</Badge>
   );
 }
-
-export function ActiveBadge({ active }: { active?: boolean | undefined }) {
-  if (active === undefined || active === null) return <span className="text-muted-foreground">—</span>;
-  return active ? <Badge>Actif</Badge> : <Badge variant="destructive">Inactif</Badge>;
-}
