@@ -20,4 +20,8 @@ export default defineConfig({
       strictPort: true,
     },
   },
+  // Explicit build target: deployed to Vercel, not the Cloudflare default from the plugin comment
+  // above. NITRO_PRESET=vercel would also work (Nitro auto-detects Vercel's own VERCEL=1 too), but
+  // pinning it here keeps the target versioned instead of relying on dashboard/env config.
+  nitro: { preset: "vercel" },
 });
