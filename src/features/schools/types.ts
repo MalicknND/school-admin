@@ -38,3 +38,31 @@ export type SchoolWithDirector = {
   school: School;
   director?: PlatformUser;
 };
+
+/** Résumé renvoyé par DELETE /api/schools/{id}/hard-delete (SchoolHardDeleteSummaryResponse). */
+export type SchoolHardDeleteSummary = {
+  usersDeleted: number;
+  academicYearsDeleted: number;
+  periodsDeleted: number;
+  classroomsDeleted: number;
+  subjectsDeleted: number;
+  teachersDeleted: number;
+  assignmentsDeleted: number;
+  curriculumEntriesDeleted: number;
+  studentsDeleted: number;
+  guardiansDeleted: number;
+  enrollmentsDeleted: number;
+  assessmentsDeleted: number;
+  gradesDeleted: number;
+  gradeCorrectionsDeleted: number;
+  attendanceEventsDeleted: number;
+  bulletinsDeleted: number;
+  decisionsDeleted: number;
+  appreciationRulesDeleted: number;
+  honorRulesDeleted: number;
+  remarkRulesDeleted: number;
+  pedagogySettingsDeleted: boolean;
+  generatedDocumentsDeleted: number;
+  documentTemplatesDeleted: number;
+  schoolDeleted: boolean;
+};

@@ -3,6 +3,7 @@ import {
   createSchoolWithAdmin,
   fetchSchool,
   fetchSchools,
+  hardDeleteSchool,
   updateSchoolPlatformStatus,
 } from "./api";
 import type { PlatformStatus } from "./types";
@@ -43,6 +44,17 @@ export function useUpdatePlatformStatus() {
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: schoolsKeys.all });
       void queryClient.invalidateQueries({ queryKey: schoolsKeys.detail(variables.id) });
+    },
+  });
+}
+
+export function useHardDeleteSchool() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, force }: { id: string; force?: boolean }) => hardDeleteSchool(id, force),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: schoolsKeys.all });
+      queryClient.removeQueries({ queryKey: schoolsKeys.detail(variables.id) });
     },
   });
 }

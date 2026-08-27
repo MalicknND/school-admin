@@ -1,11 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { APP_NAME, PORTAL_NAME } from "@/lib/branding";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { ErrorState, LoadingState } from "@/components/layout/StateBlocks";
-import { useSchool, useUpdatePlatformStatus } from "@/features/schools/hooks";
+import { useHardDeleteSchool, useSchool, useUpdatePlatformStatus } from "@/features/schools/hooks";
 import type { PlatformStatus } from "@/features/schools/types";
 import { useResetPassword, useUsers } from "@/features/users/hooks";
 import type { ResetPasswordResult } from "@/features/users/types";
@@ -25,8 +25,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +35,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+
+const HARD_DELETE_CONFIRM_WORD = "SUPPRIMER";
 
 export const Route = createFileRoute("/schools/$id")({
   ssr: false,
@@ -80,9 +85,14 @@ function SchoolDetailPage() {
   const schoolUsers = usersOfSchool(usersQuery.data, id);
   const primaryAdmin = admins[0];
 
+  const navigate = useNavigate();
   const statusMutation = useUpdatePlatformStatus();
   const resetPasswordMutation = useResetPassword();
+  const hardDeleteMutation = useHardDeleteSchool();
   const [revealedPassword, setRevealedPassword] = useState<ResetPasswordResult | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [forceAcknowledged, setForceAcknowledged] = useState(false);
 
   function handleStatusChange(platformStatus: PlatformStatus) {
     statusMutation.mutate(
@@ -107,6 +117,40 @@ function SchoolDetailPage() {
         }),
     });
   }
+
+  function handleDeleteDialogOpenChange(open: boolean) {
+    setDeleteDialogOpen(open);
+    if (!open) {
+      setDeleteConfirmText("");
+      setForceAcknowledged(false);
+    }
+  }
+
+  function handleHardDelete() {
+    if (!school) return;
+    hardDeleteMutation.mutate(
+      school.configured ? { id: school.id, force: true } : { id: school.id },
+      {
+        onSuccess: (summary) => {
+          toast.success("Établissement supprimé définitivement", {
+            description: summary
+              ? `${summary.usersDeleted} compte(s), ${summary.studentsDeleted} élève(s), ${summary.classroomsDeleted} classe(s) et toutes leurs données liées ont été supprimés.`
+              : undefined,
+          });
+          void navigate({ to: "/schools" });
+        },
+        onError: (error) =>
+          toast.error("Échec de la suppression", {
+            description: error instanceof Error ? error.message : undefined,
+          }),
+      },
+    );
+  }
+
+  const hardDeleteDisabled =
+    deleteConfirmText !== HARD_DELETE_CONFIRM_WORD ||
+    (school?.configured === true && !forceAcknowledged) ||
+    hardDeleteMutation.isPending;
 
   async function copyTemporaryPassword() {
     if (!revealedPassword) return;
@@ -304,6 +348,83 @@ function SchoolDetailPage() {
             </Card>
           </div>
         </div>
+      ) : null}
+
+      {school ? (
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Zone de danger</CardTitle>
+            <CardDescription>
+              Suppression définitive et irréversible de cet établissement.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AlertDialog open={deleteDialogOpen} onOpenChange={handleDeleteDialogOpenChange}>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="destructive">
+                  Supprimer définitivement
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer définitivement {school.name} ?</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-3 text-left">
+                      <p>
+                        Cette action supprime définitivement l’établissement ainsi que ses
+                        utilisateurs, années scolaires, classes, élèves, notes, présences,
+                        bulletins, documents générés et tous les autres éléments qui lui sont
+                        rattachés. Cette action est irréversible.
+                      </p>
+                      {school.configured ? (
+                        <p className="font-medium text-destructive">
+                          Cet établissement est configuré (onboarding terminé) : la suppression doit
+                          être forcée explicitement.
+                        </p>
+                      ) : null}
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="hard-delete-confirm">
+                      Tapez {HARD_DELETE_CONFIRM_WORD} pour confirmer
+                    </Label>
+                    <Input
+                      id="hard-delete-confirm"
+                      value={deleteConfirmText}
+                      onChange={(event) => setDeleteConfirmText(event.target.value)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  {school.configured ? (
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="hard-delete-force"
+                        checked={forceAcknowledged}
+                        onCheckedChange={(checked) => setForceAcknowledged(checked === true)}
+                      />
+                      <Label htmlFor="hard-delete-force" className="font-normal leading-snug">
+                        Je comprends que cette école est configurée et que la suppression sera
+                        forcée
+                      </Label>
+                    </div>
+                  ) : null}
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={hardDeleteDisabled}
+                    onClick={handleHardDelete}
+                    className={buttonVariants({ variant: "destructive" })}
+                  >
+                    Confirmer la suppression définitive
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
       ) : null}
 
       <Dialog

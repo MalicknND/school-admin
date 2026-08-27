@@ -25,7 +25,7 @@ type RequestOptions = {
 };
 
 async function request<T>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "DELETE",
   path: string,
   body?: unknown,
   options: RequestOptions = {},
@@ -87,4 +87,6 @@ export const apiClient = {
   get: <T>(path: string, options?: RequestOptions) => request<T>("GET", path, undefined, options),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>("POST", path, body, options),
+  delete: <T>(path: string, options?: RequestOptions) =>
+    request<T>("DELETE", path, undefined, options),
 };
