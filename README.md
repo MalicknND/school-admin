@@ -4,6 +4,12 @@ Portail d'administration **plateforme** (rôle `SUPER_ADMIN`) de School Manager.
 Ce frontend est **séparé du frontend école** : il ne gère ni élèves, ni notes, ni présences,
 ni bulletins, ni classes, ni matières, ni inscriptions.
 
+## Déploiement
+
+- Admin (ce projet) : https://school-admin-sage.vercel.app/
+- Frontend école : https://school-manager-v1.vercel.app/
+- API backend : https://school-backend.up.railway.app
+
 ## Lancer le projet
 
 ```bash
