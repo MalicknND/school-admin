@@ -1,0 +1,37 @@
+name: admin CI
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev]
+
+jobs:
+  verify:
+    name: lint · tsc · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Le lockfile est généré avec npm 11 ; Node 22 embarque npm 10 dont `npm ci`
+      # rejette la disposition d'arbre. On aligne la CI sur l'environnement de dev.
+      - run: npm install -g npm@11
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm run test:run --if-present
+
+      - name: Build
+        run: npm run build
