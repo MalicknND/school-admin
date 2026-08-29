@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   clearSession,
@@ -7,19 +7,7 @@ import {
   subscribeSession,
   type PlatformSession,
 } from "@/lib/session";
-import type { AuthUser } from "./types";
-
-type AuthContextValue = {
-  session: PlatformSession | null;
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  /** false tant que la session locale n'a pas été lue (SSR / 1er rendu). */
-  ready: boolean;
-  setSession: (session: PlatformSession) => void;
-  signOut: () => void;
-};
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, type AuthContextValue } from "./auth-context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSessionState] = useState<PlatformSession | null>(null);
@@ -54,10 +42,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth doit être utilisé dans <AuthProvider>");
-  return ctx;
 }

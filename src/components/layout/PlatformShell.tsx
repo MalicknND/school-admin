@@ -3,8 +3,7 @@ import { Building2, LayoutDashboard, LogOut, Settings, ShieldCheck } from "lucid
 import { useEffect, type ReactNode } from "react";
 import { APP_TAGLINE, PORTAL_NAME } from "@/lib/branding";
 import { clearSession, readSession } from "@/lib/session";
-import { useAuth } from "@/features/auth/AuthContext";
-import { useSignOut } from "@/features/auth/hooks";
+import { useAuth, useSignOut } from "@/features/auth/hooks";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 

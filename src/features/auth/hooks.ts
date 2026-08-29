@@ -1,12 +1,19 @@
+import { useContext } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { login } from "./api";
-import { useAuth } from "./AuthContext";
+import { AuthContext } from "./auth-context";
 import type { LoginRequest } from "./types";
 
 export const UNAUTHORIZED_PORTAL_MESSAGE =
   "Ce portail est réservé à l’administrateur de la plateforme.";
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth doit être utilisé dans <AuthProvider>");
+  return ctx;
+}
 
 export function useLogin() {
   const { setSession } = useAuth();
