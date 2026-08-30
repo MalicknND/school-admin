@@ -8,3 +8,8 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+> [!NOTE]
+> `vite.config.ts` is a plain TanStack Start / Vite config — it no longer uses
+> `@lovable.dev/vite-tanstack-config`. A Lovable resync may try to reintroduce the
+> wrapper and the `vite-tsconfig-paths` dependency; keep the standard config.
