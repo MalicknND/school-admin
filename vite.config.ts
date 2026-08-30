@@ -1,27 +1,63 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+// Standard TanStack Start / Vite config — no longer wrapped by
+// `@lovable.dev/vite-tanstack-config`. The wrapper's Lovable-sandbox-only plugins
+// (asset proxy, dev-server bridge, HMR gate, build diagnostics) are intentionally
+// dropped; the rest is inlined below. Keep this in sync manually if TanStack Start
+// / Nitro change their recommended setup.
+import { fileURLToPath } from "node:url";
 
-export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-  // Local dev only (ignored inside the Lovable cloud sandbox, which always forces 8080).
-  // The école frontend already runs on 8080, so this admin app uses 5174 instead.
-  vite: {
-    server: {
-      port: 5174,
-      strictPort: true,
+import { defineConfig, loadEnv } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { nitro } from "nitro/vite";
+
+export default defineConfig(({ command, mode }) => {
+  // Freeze VITE_* into import.meta.env for both the client and the SSR bundle —
+  // src/lib/branding.ts reads import.meta.env["VITE_API_BASE_URL"] on both sides.
+  const env = loadEnv(mode, process.cwd(), "VITE_");
+  const define = Object.fromEntries(
+    Object.entries(env).map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)]),
+  );
+
+  return {
+    define,
+    server: { host: "::", port: 5174, strictPort: true },
+    css: { transformer: "lightningcss" },
+    resolve: {
+      tsconfigPaths: true,
+      alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+      dedupe: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@tanstack/react-query",
+        "@tanstack/query-core",
+      ],
     },
-  },
-  // Explicit build target: deployed to Vercel, not the Cloudflare default from the plugin comment
-  // above. NITRO_PRESET=vercel would also work (Nitro auto-detects Vercel's own VERCEL=1 too), but
-  // pinning it here keeps the target versioned instead of relying on dashboard/env config.
-  nitro: { preset: "vercel" },
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+      ],
+    },
+    plugins: [
+      tailwindcss(),
+      tanstackStart({
+        // Redirect TanStack Start's bundled server entry to src/server.ts (our
+        // SSR error wrapper). nitro/vite builds from this.
+        server: { entry: "server" },
+        importProtection: {
+          behavior: "error",
+          client: { files: ["**/server/**"], specifiers: ["server-only"] },
+        },
+      }),
+      // Build-only: emits .vercel/output (Build Output API v3) that Vercel consumes.
+      ...(command === "build" ? [nitro({ preset: "vercel" })] : []),
+      viteReact(),
+    ],
+  };
 });
